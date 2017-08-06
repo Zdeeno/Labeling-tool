@@ -6,6 +6,11 @@ IMAGE_RESOLUTION = (1200, 700)
 PATH = '/home/zdeeno/Pictures/dataset'
 curr_img = None
 curr_img_index = None
+rectangles = []
+curr_rect_holder = None
+curr_rect_pt = None
+creating_rect = False
+
 
 def resize_image(image):
     ratio = max(image.size[0]/IMAGE_RESOLUTION[0], image.size[1]/IMAGE_RESOLUTION[1])
@@ -60,10 +65,33 @@ def rightKey(event):
     show_image(img_buffer[curr_img_index])
 
 
+def left_click(event):
+    global creating_rect, curr_rect_pt, curr_rect_holder
+    if not creating_rect:
+        curr_rect_pt = (event.x, event.y)
+        curr_rect_holder = canvas.create_rectangle(*curr_rect_pt, curr_rect_pt[0] + 2, curr_rect_pt[1] + 2, width=2)
+        creating_rect = True
+    else:
+        creating_rect = False
+        curr_rect_holder = False
+
+
+def motion(event):
+    global curr_rect_pt, curr_rect_holder, creating_rect
+    if creating_rect:
+        pt = (event.x, event.y)
+        if curr_rect_pt[0] > pt[0]:
+            canvas.coords(curr_rect_holder, *pt, *curr_rect_pt)
+        else:
+            canvas.coords(curr_rect_holder, *curr_rect_pt, *pt)
+
+
 root = tk.Tk()
 canvas = tk.Canvas(root, height=IMAGE_RESOLUTION[1], width=IMAGE_RESOLUTION[0])
 root.bind('<Left>', leftKey)
 root.bind('<Right>', rightKey)
+canvas.bind("<Button-1>", left_click)
+canvas.bind("<Motion>", motion)
 # img_item = show_image(PATH)
 img_buffer = iterate_files(PATH)
 if len(img_buffer) > 0:
