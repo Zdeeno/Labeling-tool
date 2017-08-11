@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import font
+from tkinter import filedialog
 from PIL import ImageTk, Image
 import os
 
@@ -20,7 +21,6 @@ class ImageProperty():
 COLORS = ('red', 'blue', 'green', 'yellow', 'cyan', 'goldenrod', 'coral', 'brown', 'IndianRed4', 'orchid', 'black',
           'pink', 'azure4', 'orange', 'orange4', 'pink4', 'IndianRed1', 'chartreuse4', 'chocolate')
 IMAGE_RESOLUTION = (1200, 700)
-PATH = '/home/zdeeno/Pictures/dataset'
 curr_img = None
 curr_img_index = None
 images = []
@@ -33,6 +33,8 @@ bar_rects = []
 bar_texts = []
 image_x = None
 image_y = None
+im_path = None
+out_path = None
 
 
 def resize_image(image):
@@ -167,6 +169,20 @@ def bar_click(event):
         curr_rect_index = index
 
 
+def bar_delete(event):
+    global curr_rect_index
+    width = int(IMAGE_RESOLUTION[0] / 10) - 2
+    index = int((event.x - 10) / width)
+    if index < len(images[curr_img_index].rectangles):
+        curr_rect_index = None
+        holder = images[curr_img_index].rectangles[index]['holder']
+        images[curr_img_index].rectangles.pop(index)
+        canvas.delete(holder)
+        bar.delete("all")
+        init_bar()
+        update_bar()
+
+
 def init_bar():
     bar_rects.clear()
     bar_texts.clear()
@@ -180,23 +196,59 @@ def init_bar():
         bar_texts.append(t)
 
 
+def input_dialog():
+    dirname = filedialog.askdirectory(title="Specify input directory")
+    global im_path, curr_img_index
+    im_path = dirname
+    input_entry.config(state='normal')
+    input_entry.delete(first=0, last=tk.END)
+    input_entry.insert(0, str(im_path))
+    input_entry.config(state='readonly')
+    for im_path in iterate_files(im_path):
+        images.append(ImageProperty(im_path))
+    if len(images) > 0:
+        curr_img_index = 0
+        show_image(images[0].path)
+
+
+def output_dialog():
+    dirname = filedialog.askdirectory(title="Specify output directory")
+    global out_path
+    out_path = dirname
+    output_entry.config(state='normal')
+    output_entry.delete(first=0, last=tk.END)
+    output_entry.insert(0, str(out_path))
+    output_entry.config(state='readonly')
+
+
 root = tk.Tk()
 FONT = font.Font(family="Helvetica", size=30, weight="bold")
 canvas = tk.Canvas(root, height=IMAGE_RESOLUTION[1], width=IMAGE_RESOLUTION[0])
 bar = tk.Canvas(root, height=int(IMAGE_RESOLUTION[1]/8), width=IMAGE_RESOLUTION[0], bg='white')
+
+top_frame = tk.Frame(root)
+top_frame.pack(expand=1, side=tk.TOP, fill=tk.X)
+tk.Button(top_frame, text='    INPUT    ', command=input_dialog).pack(side=tk.LEFT)
+input_entry = tk.Entry(top_frame)
+input_entry.pack(fill=tk.X, side=tk.RIGHT, expand=1)
+input_entry.config(state='readonly')
+
+top_frame = tk.Frame(root)
+top_frame.pack(expand=1, side=tk.TOP, fill=tk.X)
+tk.Button(top_frame, text='    OUTPUT    ', command=output_dialog).pack(side=tk.LEFT)
+output_entry = tk.Entry(top_frame)
+output_entry.pack(fill=tk.X, side=tk.RIGHT, expand=1)
+output_entry.config(state='readonly')
+
 root.bind('<Left>', leftKey)
 root.bind('<Right>', rightKey)
 canvas.bind("<Button-1>", left_click)
 canvas.bind("<Motion>", motion)
 bar.bind('<Button-1>', bar_click)
+bar.bind('<Button-3>', bar_delete)
 root.bind('<Up>', upKey)
 root.bind('<Down>', downKey)
-# img_item = show_image(PATH)
-for im_path in iterate_files(PATH):
-    images.append(ImageProperty(im_path))
-if len(images) > 0:
-    curr_img_index = 0
-    show_image(images[0].path)
+
 root.mainloop()
 
 
