@@ -198,7 +198,6 @@ class Core():
             self.bar.itemconfig(self.bar_rects[i], outline=color, fill=color)
             self.bar.itemconfig(self.bar_texts[i], fill='white', text=str(index), anchor='center', font=self.FONT)
 
-
     def bar_click(self, event):
         width = int(self.IMAGE_RESOLUTION[0] / 10) - 2
         index = int((event.x - 10) / width)
