@@ -6,9 +6,11 @@ import os
 
 
 class ImageProperty():
-    def __init__(self, path):
+    def __init__(self, path, resolution):
+        self.resolution = resolution
         self.path = path
         self.rectangles = []
+        self.saved = False
 
     def get_next_class(self):
         ret = 0
@@ -18,237 +20,249 @@ class ImageProperty():
         return ret + 1
 
 
-COLORS = ('red', 'blue', 'green', 'yellow', 'cyan', 'goldenrod', 'coral', 'brown', 'IndianRed4', 'orchid', 'black',
-          'pink', 'azure4', 'orange', 'orange4', 'pink4', 'IndianRed1', 'chartreuse4', 'chocolate')
-IMAGE_RESOLUTION = (1200, 700)
-curr_img = None
-curr_img_index = None
-images = []
-curr_rect_holder = None
-curr_rect_pt = None
-creating_rect = False
-class_index = None
-curr_rect_index = None
-bar_rects = []
-bar_texts = []
-image_x = None
-image_y = None
-im_path = None
-out_path = None
+class Core():
+    def __init__(self, filewriter):
+        self.COLORS = ('red', 'blue', 'green', 'yellow', 'cyan', 'goldenrod', 'coral', 'brown', 'IndianRed4', 'orchid', 'black',
+        'pink', 'azure4', 'orange', 'orange4', 'pink4', 'IndianRed1', 'chartreuse4', 'chocolate')
+        self.IMAGE_RESOLUTION = (1200, 700)
+        self.filewriter = filewriter
+        self.curr_img = None
+        self.curr_img_index = None
+        self.images = []
+        self.curr_rect_holder = None
+        self.curr_rect_pt = None
+        self.creating_rect = False
+        self.class_index = None
+        self.curr_rect_index = None
+        self.bar_rects = []
+        self.bar_texts = []
+        self.image_x = None
+        self.image_y = None
+        self.im_path = None
+        self.out_path = None
+
+        self.root = tk.Tk()
+        self.FONT = font.Font(family="Helvetica", size=30, weight="bold")
+        self.canvas = tk.Canvas(self.root, height=self.IMAGE_RESOLUTION[1], width=self.IMAGE_RESOLUTION[0])
+        self.bar = tk.Canvas(self.root, height=int(self.IMAGE_RESOLUTION[1] / 8), width=self.IMAGE_RESOLUTION[0], bg='white')
+
+        self.top_frame = tk.Frame(self.root)
+        self.top_frame.pack(expand=1, side=tk.TOP, fill=tk.X)
+        tk.Button(self.top_frame, text='    INPUT    ', command=self.input_dialog).pack(side=tk.LEFT)
+        self.input_entry = tk.Entry(self.top_frame)
+        self.input_entry.pack(fill=tk.X, side=tk.RIGHT, expand=1)
+        self.input_entry.config(state='readonly')
+
+        self.top_frame = tk.Frame(self.root)
+        self.top_frame.pack(expand=1, side=tk.TOP, fill=tk.X)
+        tk.Button(self.top_frame, text='    OUTPUT    ', command=self.output_dialog).pack(side=tk.LEFT)
+        self.output_entry = tk.Entry(self.top_frame)
+        self.output_entry.pack(fill=tk.X, side=tk.RIGHT, expand=1)
+        self.output_entry.config(state='readonly')
+
+        self.root.bind('<Left>', self.leftKey)
+        self.root.bind('<Right>', self.rightKey)
+        self.root.bind('<Up>', self.upKey)
+        self.root.bind('<Down>', self.downKey)
+        self.canvas.bind("<Button-1>", self.left_click)
+        self.canvas.bind("<Motion>", self.motion)
+        self.canvas.bind('<Button-3>', self.write_file)
+        self.bar.bind('<Button-1>', self.bar_click)
+        self.bar.bind('<Button-3>', self.bar_delete)
+
+        self.root.mainloop()
+
+    def resize_image(self, image):
+        image.resolution = self.IMAGE_RESOLUTION
+        ratio = max(image.size[0] / image.resolution[0], image.size[1] / image.resolution[1])
+        ret_x = image.size[0] / ratio - 2
+        ret_y = image.size[1] / ratio - 2
+        self.image_x = (int(image.resolution[0] / 2 - ret_x / 2), int(image.resolution[0] / 2 + ret_x / 2))
+        self.image_y = (int(image.resolution[1] / 2 - ret_y / 2), int(image.resolution[1] / 2 + ret_y / 2))
+        image = image.resize((int(ret_x), int(ret_y)), Image.ANTIALIAS)
+        return image
+
+    def show_image(self, path):
+        # clear:
+        self.canvas.delete("all")
+        self.bar.delete("all")
+        # open image
+        image = Image.open(path)
+        image = self.resize_image(image)
+        photo = ImageTk.PhotoImage(image)
+        self.curr_img = photo
+        item = self.canvas.create_image(int(self.IMAGE_RESOLUTION[0] / 2), int(self.IMAGE_RESOLUTION[1] / 2), image=photo)
+        # create rectangles
+        self.curr_rect_index = None
+        for rect in self.images[self.curr_img_index].rectangles:
+            self.canvas.create_rectangle(rect['position'], width=2,
+                                    outline=self.COLORS[(rect['class'] - 1) % len(self.COLORS)])
+        # update bar
+        self.init_bar()
+        self.update_bar()
+        # apply
+        self.canvas.pack(side='top', expand=True, fill='both')
+        self.bar.pack(side='bottom', expand=True, fill='both')
+        return item
+
+    def iterate_files(self, folder_path):
+        directory = os.fsencode(folder_path)
+        ret = []
+
+        for file in os.listdir(directory):
+            filename = os.fsdecode(file)
+            file_path = os.path.join(folder_path, filename)
+
+            try:
+                image = Image.open(file_path)
+                yield image.size, file_path
+            except:
+                OSError
 
 
-def resize_image(image):
-    ratio = max(image.size[0]/IMAGE_RESOLUTION[0], image.size[1]/IMAGE_RESOLUTION[1])
-    ret_x = image.size[0]/ratio - 2
-    ret_y = image.size[1]/ratio - 2
-    global image_x, image_y
-    image_x = (int(IMAGE_RESOLUTION[0]/2 - ret_x/2), int(IMAGE_RESOLUTION[0]/2 + ret_x/2))
-    image_y = (int(IMAGE_RESOLUTION[1]/2 - ret_y/2), int(IMAGE_RESOLUTION[1]/2 + ret_y/2))
-    image = image.resize((int(ret_x), int(ret_y)), Image.ANTIALIAS)
-    return image
+    def leftKey(self, event):
+        if self.curr_img_index is not None:
+            self.curr_img_index -= 1
+        if self.curr_img_index >= len(self.images):
+            self.curr_img_index = 0
+        self.show_image(self.images[self.curr_img_index].path)
+        self.curr_rect_index = None
 
+    def rightKey(self, event):
+        if self.curr_img_index is not None:
+            self.curr_img_index += 1
+        if self.curr_img_index >= len(self.images):
+            self.curr_img_index = 0
+        self.show_image(self.images[self.curr_img_index].path)
+        self.curr_rect_index = None
 
-def show_image(path):
-    # clear:
-    canvas.delete("all")
-    bar.delete("all")
-    # open image
-    image = Image.open(path)
-    image = resize_image(image)
-    photo = ImageTk.PhotoImage(image)
-    global curr_img
-    curr_img = photo
-    item = canvas.create_image(int(IMAGE_RESOLUTION[0] / 2), int(IMAGE_RESOLUTION[1] / 2), image=photo)
-    # create rectangles
-    global curr_rect_index
-    curr_rect_index = None
-    for rect in images[curr_img_index].rectangles:
-        canvas.create_rectangle(rect['position'], width=2, outline=COLORS[(rect['class'] - 1) % len(COLORS)])
-    # update bar
-    init_bar()
-    update_bar()
-    # apply
-    canvas.pack(side='top', expand=True, fill='both')
-    bar.pack(side='bottom', expand=True, fill='both')
-    return item
+    def upKey(self, event):
+        if self.curr_rect_index is not None:
+            self.images[self.curr_img_index].rectangles[self.curr_rect_index]['class'] += 1
+            holder = self.images[self.curr_img_index].rectangles[self.curr_rect_index]['holder']
+            self.canvas.itemconfig(holder, outline=self.COLORS[
+                (self.images[self.curr_img_index].rectangles[self.curr_rect_index]['class'] - 1) % len(
+                    self.COLORS)])
+            self.images[self.curr_img_index].saved = False
+            self.update_bar()
 
+    def downKey(self, event):
+        if self.curr_rect_index is not None and self.images[self.curr_img_index].rectangles[self.curr_rect_index][
+                'class'] > 1:
+            self.images[self.curr_img_index].rectangles[self.curr_rect_index]['class'] -= 1
+            holder = self.images[self.curr_img_index].rectangles[self.curr_rect_index]['holder']
+            self.canvas.itemconfig(holder, outline=self.COLORS[
+                (self.images[self.curr_img_index].rectangles[self.curr_rect_index]['class'] - 1) % len(
+                    self.COLORS)])
+            self.images[self.curr_img_index].saved = False
+            self.update_bar()
 
-def iterate_files(folder_path):
-    directory = os.fsencode(folder_path)
-    ret = []
-
-    for file in os.listdir(directory):
-        filename = os.fsdecode(file)
-        file_path = os.path.join(folder_path, filename)
-
-        try:
-            Image.open(file_path)
-            ret.append(file_path)
-        except: OSError
-
-    return ret
-
-
-def leftKey(event):
-    global curr_img_index
-    if curr_img_index is not None:
-        curr_img_index -= 1
-    if curr_img_index >= len(images):
-        curr_img_index = 0
-    show_image(images[curr_img_index].path)
-
-
-def rightKey(event):
-    global curr_img_index
-    if curr_img_index is not None:
-        curr_img_index += 1
-    if curr_img_index >= len(images):
-        curr_img_index = 0
-    show_image(images[curr_img_index].path)
-
-
-def upKey(event):
-    if curr_rect_index is not None:
-        images[curr_img_index].rectangles[curr_rect_index]['class'] += 1
-        holder = images[curr_img_index].rectangles[curr_rect_index]['holder']
-        canvas.itemconfig(holder, outline=COLORS[(images[curr_img_index].rectangles[curr_rect_index]['class'] - 1) % len(COLORS)])
-        update_bar()
-
-
-def downKey(event):
-    if curr_rect_index is not None and images[curr_img_index].rectangles[curr_rect_index]['class'] > 1:
-        images[curr_img_index].rectangles[curr_rect_index]['class'] -= 1
-        holder = images[curr_img_index].rectangles[curr_rect_index]['holder']
-        canvas.itemconfig(holder, outline=COLORS[(images[curr_img_index].rectangles[curr_rect_index]['class'] - 1) % len(COLORS)])
-        update_bar()
-
-
-def left_click(event):
-    global creating_rect, curr_rect_pt, curr_rect_holder, class_index, curr_rect_index
-    if not creating_rect:
-        if image_x[0] < event.x < image_x[1] and image_y[0] < event.y < image_x[1]:
-            curr_rect_pt = (event.x, event.y)
-            class_index = images[curr_img_index].get_next_class()
-            curr_rect_holder = canvas.create_rectangle(*curr_rect_pt, curr_rect_pt[0] + 2, curr_rect_pt[1] + 2,
-                                                       width=2, outline=COLORS[(class_index - 1) % len(COLORS)])
-            creating_rect = True
-    else:
-        images[curr_img_index].rectangles.append({'class': class_index,
-                                                  'position': canvas.coords(curr_rect_holder),
-                                                  'holder': curr_rect_holder})
-        creating_rect = False
-        curr_rect_holder = False
-        curr_rect_index = len(images[curr_img_index].rectangles) - 1
-        update_bar()
-
-
-def motion(event):
-    global curr_rect_pt, curr_rect_holder, creating_rect
-    if creating_rect and image_x[0] < event.x < image_x[1] and image_y[0] < event.y < image_x[1]:
-        pt = (event.x, event.y)
-        if curr_rect_pt[0] > pt[0]:
-            canvas.coords(curr_rect_holder, *pt, *curr_rect_pt)
+    def left_click(self, event):
+        if not self.creating_rect:
+            if self.image_x[0] < event.x < self.image_x[1] and self.image_y[0] < event.y < self.image_x[1]:
+                self.curr_rect_pt = (event.x, event.y)
+                self.class_index = self.images[self.curr_img_index].get_next_class()
+                self.curr_rect_holder = self.canvas.create_rectangle(*self.curr_rect_pt, self.curr_rect_pt[0] + 2,
+                                                                self.curr_rect_pt[1] + 2,
+                                                                width=2, outline=self.COLORS[
+                        (self.class_index - 1) % len(self.COLORS)])
+                self.creating_rect = True
         else:
-            canvas.coords(curr_rect_holder, *curr_rect_pt, *pt)
+            self.images[self.curr_img_index].rectangles.append({'class': self.class_index,
+                                                                'position': self.canvas.coords(self.curr_rect_holder),
+                                                                'holder': self.curr_rect_holder})
+            self.creating_rect = False
+            self.curr_rect_holder = False
+            self.curr_rect_index = len(self.images[self.curr_img_index].rectangles) - 1
+            self.images[self.curr_img_index].saved = False
+            self.update_bar()
+
+    def motion(self, event):
+        if self.creating_rect and self.image_x[0] < event.x < self.image_x[1] and self.image_y[0] < event.y < \
+                self.image_x[1]:
+            pt = (event.x, event.y)
+            if self.curr_rect_pt[0] > pt[0]:
+                self.canvas.coords(self.curr_rect_holder, *pt, *self.curr_rect_pt)
+            else:
+                self.canvas.coords(self.curr_rect_holder, *self.curr_rect_pt, *pt)
+
+    def update_bar(self):
+        if self.images[self.curr_img_index].saved:
+            self.bar.configure(background='green')
+        else:
+            self.bar.configure(background='white')
+        for i in range(len(self.images[self.curr_img_index].rectangles)):
+            rec = self.images[self.curr_img_index].rectangles[i]
+            index = rec['class']
+            color = self.COLORS[(index - 1) % len(self.COLORS)]
+            self.bar.itemconfig(self.bar_rects[i], outline=color, fill=color)
+            self.bar.itemconfig(self.bar_texts[i], fill='white', text=str(index), anchor='center', font=self.FONT)
 
 
-def update_bar():
-    for i in range(len(images[curr_img_index].rectangles)):
-        rec = images[curr_img_index].rectangles[i]
-        index = rec['class']
-        color = COLORS[(index - 1) % len(COLORS)]
-        bar.itemconfig(bar_rects[i], outline=color, fill=color)
-        bar.itemconfig(bar_texts[i], fill='white', text=str(index), anchor='center', font=FONT)
+    def bar_click(self, event):
+        width = int(self.IMAGE_RESOLUTION[0] / 10) - 2
+        index = int((event.x - 10) / width)
+        if index < len(self.images[self.curr_img_index].rectangles):
+            self.curr_rect_index = index
 
+    def bar_delete(self, event):
+        width = int(self.IMAGE_RESOLUTION[0] / 10) - 2
+        index = int((event.x - 10) / width)
+        if index < len(self.images[self.curr_img_index].rectangles):
+            self.curr_rect_index = None
+            holder = self.images[self.curr_img_index].rectangles[index]['holder']
+            self.images[self.curr_img_index].rectangles.pop(index)
+            self.canvas.delete(holder)
+            self.bar.delete("all")
+            self.init_bar()
+            self.update_bar()
 
-def bar_click(event):
-    global curr_rect_index
-    width = int(IMAGE_RESOLUTION[0] / 10) - 2
-    index = int((event.x - 10)/width)
-    if index < len(images[curr_img_index].rectangles):
-        curr_rect_index = index
+    def init_bar(self):
+        self.bar_rects.clear()
+        self.bar_texts.clear()
+        width = int(self.IMAGE_RESOLUTION[0] / 10) - 2
+        height = int(self.IMAGE_RESOLUTION[1] / 8) - 10
+        for i in range(10):
+            r = self.bar.create_rectangle(i * width + 10, 10, (i + 1) * width + 10, height, outline='white', fill='white')
+            t = self.bar.create_text(i * width + 10 + int(width / 2), 5 + int(height / 2), fill='white', text=str('X'),
+                                anchor='center', font=self.FONT)
+            self.bar_rects.append(r)
+            self.bar_texts.append(t)
 
+    def input_dialog(self):
+        dirname = filedialog.askdirectory(title="Specify input directory")
+        self.im_path = dirname
+        self.input_entry.config(state='normal')
+        self.input_entry.delete(first=0, last=tk.END)
+        self.input_entry.insert(0, str(self.im_path))
+        self.input_entry.config(state='readonly')
+        print(self.iterate_files(self.im_path))
+        for resolution, path in self.iterate_files(self.im_path):
+            self.images.append(ImageProperty(path, resolution))
+        if len(self.images) > 0:
+            self.curr_img_index = 0
+            self.show_image(self.images[0].path)
 
-def bar_delete(event):
-    global curr_rect_index
-    width = int(IMAGE_RESOLUTION[0] / 10) - 2
-    index = int((event.x - 10) / width)
-    if index < len(images[curr_img_index].rectangles):
-        curr_rect_index = None
-        holder = images[curr_img_index].rectangles[index]['holder']
-        images[curr_img_index].rectangles.pop(index)
-        canvas.delete(holder)
-        bar.delete("all")
-        init_bar()
-        update_bar()
+    def output_dialog(self):
+        dirname = filedialog.askdirectory(title="Specify output directory")
+        self.out_path = dirname
+        self.output_entry.config(state='normal')
+        self.output_entry.delete(first=0, last=tk.END)
+        self.output_entry.insert(0, str(self.out_path))
+        self.output_entry.config(state='readonly')
 
-
-def init_bar():
-    bar_rects.clear()
-    bar_texts.clear()
-    width = int(IMAGE_RESOLUTION[0] / 10) - 2
-    height = int(IMAGE_RESOLUTION[1] / 8) - 10
-    for i in range(10):
-        r = bar.create_rectangle(i * width + 10, 10, (i + 1) * width + 10, height, outline='white', fill='white')
-        t = bar.create_text(i * width + 10 + int(width / 2), 5 + int(height / 2), fill='white', text=str('X'),
-                            anchor='center', font=FONT)
-        bar_rects.append(r)
-        bar_texts.append(t)
-
-
-def input_dialog():
-    dirname = filedialog.askdirectory(title="Specify input directory")
-    global im_path, curr_img_index
-    im_path = dirname
-    input_entry.config(state='normal')
-    input_entry.delete(first=0, last=tk.END)
-    input_entry.insert(0, str(im_path))
-    input_entry.config(state='readonly')
-    for im_path in iterate_files(im_path):
-        images.append(ImageProperty(im_path))
-    if len(images) > 0:
-        curr_img_index = 0
-        show_image(images[0].path)
-
-
-def output_dialog():
-    dirname = filedialog.askdirectory(title="Specify output directory")
-    global out_path
-    out_path = dirname
-    output_entry.config(state='normal')
-    output_entry.delete(first=0, last=tk.END)
-    output_entry.insert(0, str(out_path))
-    output_entry.config(state='readonly')
-
-
-root = tk.Tk()
-FONT = font.Font(family="Helvetica", size=30, weight="bold")
-canvas = tk.Canvas(root, height=IMAGE_RESOLUTION[1], width=IMAGE_RESOLUTION[0])
-bar = tk.Canvas(root, height=int(IMAGE_RESOLUTION[1]/8), width=IMAGE_RESOLUTION[0], bg='white')
-
-top_frame = tk.Frame(root)
-top_frame.pack(expand=1, side=tk.TOP, fill=tk.X)
-tk.Button(top_frame, text='    INPUT    ', command=input_dialog).pack(side=tk.LEFT)
-input_entry = tk.Entry(top_frame)
-input_entry.pack(fill=tk.X, side=tk.RIGHT, expand=1)
-input_entry.config(state='readonly')
-
-top_frame = tk.Frame(root)
-top_frame.pack(expand=1, side=tk.TOP, fill=tk.X)
-tk.Button(top_frame, text='    OUTPUT    ', command=output_dialog).pack(side=tk.LEFT)
-output_entry = tk.Entry(top_frame)
-output_entry.pack(fill=tk.X, side=tk.RIGHT, expand=1)
-output_entry.config(state='readonly')
-
-root.bind('<Left>', leftKey)
-root.bind('<Right>', rightKey)
-canvas.bind("<Button-1>", left_click)
-canvas.bind("<Motion>", motion)
-bar.bind('<Button-1>', bar_click)
-bar.bind('<Button-3>', bar_delete)
-root.bind('<Up>', upKey)
-root.bind('<Down>', downKey)
-
-root.mainloop()
-
-
+    def write_file(self, event):
+        image = self.images[self.curr_img_index]
+        res = tuple(image.resolution)
+        i = 0
+        for rec in image.rectangles:
+            self.filewriter.write_line(res,
+                                       rec['class'],
+                                       (rec['position'][0], rec['position'][1]),
+                                       (rec['position'][2], rec['position'][3]),
+                                       str(os.path.basename(image.path)),
+                                       str(self.out_path),
+                                       i == 0)
+            i += 1
+        self.images[self.curr_img_index].saved = True
+        self.update_bar()
