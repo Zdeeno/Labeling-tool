@@ -45,6 +45,7 @@ class Core():
 
         self.root = tk.Tk()
         self.FONT = font.Font(family="Helvetica", size=30, weight="bold")
+        self.FONT2 = font.Font(family="Helvetica", size=16)
         self.canvas = tk.Canvas(self.root, height=self.IMAGE_RESOLUTION[1], width=self.IMAGE_RESOLUTION[0])
         self.bar = tk.Canvas(self.root, height=int(self.IMAGE_RESOLUTION[1] / 8), width=self.IMAGE_RESOLUTION[0], bg='white')
 
@@ -61,6 +62,9 @@ class Core():
         self.output_entry = tk.Entry(self.top_frame)
         self.output_entry.pack(fill=tk.X, side=tk.RIGHT, expand=1)
         self.output_entry.config(state='readonly')
+
+        self.text = tk.Label(self.root, text='0/0', font=self.FONT2)
+        self.text.pack(expand=1, side=tk.TOP, fill=tk.X)
 
         self.root.bind('<Left>', self.leftKey)
         self.root.bind('<Right>', self.rightKey)
@@ -80,8 +84,6 @@ class Core():
         ret_x = int(round(image.size[0] / self.ratio))
         ret_y = int(round(image.size[1] / self.ratio))
         self.image_x = (int(round(image.resolution[0] / 2 - ret_x / 2)), int(round(image.resolution[0] / 2 + ret_x / 2)))
-        print(self.image_x)
-        print(ret_x)
         self.image_y = (int(round(image.resolution[1] / 2 - ret_y / 2)), int(round(image.resolution[1] / 2 + ret_y / 2)))
         image = image.resize((ret_x, ret_y), Image.ANTIALIAS)
         return image
@@ -107,6 +109,7 @@ class Core():
         # apply
         self.canvas.pack(side='top', expand=True, fill='both')
         self.bar.pack(side='bottom', expand=True, fill='both')
+        self.text.config(text=(str(self.curr_img_index+1) + '/' + str(len(self.images))))
         return item
 
     def iterate_files(self, folder_path):
