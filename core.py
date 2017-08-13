@@ -219,6 +219,7 @@ class Core():
             holder = self.images[self.curr_img_index].rectangles[index]['holder']
             self.images[self.curr_img_index].rectangles.pop(index)
             self.canvas.delete(holder)
+            self.images[self.curr_img_index].saved = False
             self.bar.delete("all")
             self.init_bar()
             self.update_bar()
