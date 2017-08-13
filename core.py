@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import font
 from tkinter import filedialog
+from tkinter import messagebox
 from PIL import ImageTk, Image
 import os
 
@@ -40,6 +41,7 @@ class Core():
         self.image_y = None
         self.im_path = None
         self.out_path = None
+        self.ratio = None
 
         self.root = tk.Tk()
         self.FONT = font.Font(family="Helvetica", size=30, weight="bold")
@@ -74,12 +76,14 @@ class Core():
 
     def resize_image(self, image):
         image.resolution = self.IMAGE_RESOLUTION
-        ratio = max(image.size[0] / image.resolution[0], image.size[1] / image.resolution[1])
-        ret_x = image.size[0] / ratio - 2
-        ret_y = image.size[1] / ratio - 2
-        self.image_x = (int(image.resolution[0] / 2 - ret_x / 2), int(image.resolution[0] / 2 + ret_x / 2))
-        self.image_y = (int(image.resolution[1] / 2 - ret_y / 2), int(image.resolution[1] / 2 + ret_y / 2))
-        image = image.resize((int(ret_x), int(ret_y)), Image.ANTIALIAS)
+        self.ratio = max(image.size[0] / image.resolution[0], image.size[1] / image.resolution[1])
+        ret_x = int(round(image.size[0] / self.ratio))
+        ret_y = int(round(image.size[1] / self.ratio))
+        self.image_x = (int(round(image.resolution[0] / 2 - ret_x / 2)), int(round(image.resolution[0] / 2 + ret_x / 2)))
+        print(self.image_x)
+        print(ret_x)
+        self.image_y = (int(round(image.resolution[1] / 2 - ret_y / 2)), int(round(image.resolution[1] / 2 + ret_y / 2)))
+        image = image.resize((ret_x, ret_y), Image.ANTIALIAS)
         return image
 
     def show_image(self, path):
@@ -178,7 +182,7 @@ class Core():
             self.update_bar()
 
     def motion(self, event):
-        if self.creating_rect and self.image_x[0] < event.x < self.image_x[1] and self.image_y[0] < event.y < \
+        if self.creating_rect and self.image_x[0] <= event.x <= self.image_x[1] and self.image_y[0] < event.y < \
                 self.image_x[1]:
             pt = (event.x, event.y)
             if self.curr_rect_pt[0] > pt[0]:
@@ -254,11 +258,25 @@ class Core():
         image = self.images[self.curr_img_index]
         res = tuple(image.resolution)
         i = 0
+        diffx = self.image_x[0]
+        diffy = self.image_y[0]
+        if self.out_path is None:
+            messagebox.showwarning(
+                "Saving",
+                "You must specify output path first!\n"
+            )
+            return
         for rec in image.rectangles:
+            lt = (int((rec['position'][0] - diffx) * self.ratio), int((rec['position'][1] - diffy) * self.ratio))
+            rb = [int((rec['position'][2] - diffx) * self.ratio) - 1, int((rec['position'][3] - diffy) * self.ratio) - 1]
+            if rb[0] >= res[0]:
+                rb[0] = res[0] - 1
+            if rb[1] >= res[1]:
+                rb[1] = res[1] - 1
             self.filewriter.write_line(res,
                                        rec['class'],
-                                       (rec['position'][0], rec['position'][1]),
-                                       (rec['position'][2], rec['position'][3]),
+                                       lt,
+                                       tuple(rb),
                                        str(os.path.basename(image.path)),
                                        str(self.out_path),
                                        i == 0)
