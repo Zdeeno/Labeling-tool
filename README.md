@@ -26,4 +26,4 @@ From top to bottom:
 * `Right mouse button ` : When clicked on canvas it saves rectangles into file. This is visualised by green background of bar. When clicked on item in bar, item is deleted.
 
 ## Running:
-Run tool simply by command `python Labeling-tool.py`, then choose input and output folders and work can start.
+Run tool simply by command `python Labeling-tool.py`, then choose input/output folders and work can start.
