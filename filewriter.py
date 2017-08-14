@@ -11,7 +11,7 @@ class FileWriter:
         :param lt: left top corner coordinates of bounding box (coordinates indexed from 0 to resolution - 1)
         :param rb: right bottom corner coordinates of bounding box (coordinates indexed from 0 to resolution - 1)
         :param image_name: string - name of image file
-        :param output_path: string - absolute output path
+        :param output_path: string - absolute output folder path
         :param is_new_file: boolean - True if current line is first in text file
         :return: None
         '''
