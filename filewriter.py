@@ -15,7 +15,7 @@ class FileWriter:
         :param is_new_file: boolean - True if current line is first in text file
         :return: None
         '''
-        raise NotImplementedError( "Should have implemented this" )
+        raise NotImplementedError("Should have implemented this")
 
 
 class FileWriterDebug(FileWriter):
