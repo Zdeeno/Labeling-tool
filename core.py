@@ -42,6 +42,8 @@ class Core():
         self.im_path = None
         self.out_path = None
         self.ratio = None
+        self.barsize = 0
+        self.curr_bar = None
 
         self.root = tk.Tk()
         self.FONT = font.Font(family="Helvetica", size=30, weight="bold")
@@ -65,6 +67,13 @@ class Core():
 
         self.text = tk.Label(self.root, text='0/0', font=self.FONT2)
         self.text.pack(expand=1, side=tk.TOP, fill=tk.X)
+
+        self.bottom_frame = tk.Frame(self.root)
+        self.bottom_frame.pack(expand=1, side=tk.BOTTOM, fill=tk.X)
+        self.text2 = tk.Label(self.bottom_frame, text='0/0', font=self.FONT2)
+        tk.Button(self.bottom_frame, text=' < ', command=self.prev_bar).pack(side=tk.LEFT)
+        tk.Button(self.bottom_frame, text=' > ', command=self.next_bar).pack(side=tk.RIGHT)
+        self.text2.pack()
 
         self.root.bind('<Left>', self.leftKey)
         self.root.bind('<Right>', self.rightKey)
@@ -106,6 +115,8 @@ class Core():
                                                 width=2, outline=self.COLORS[(rect['class'] - 1) % len(self.COLORS)])
             i += 1
         # update bar
+        self.curr_bar = 1
+        self.barsize = self.get_barsize(len(self.images[self.curr_img_index].rectangles))
         self.init_bar()
         self.update_bar()
         # apply
@@ -113,6 +124,15 @@ class Core():
         self.bar.pack(side='bottom', expand=True, fill='both')
         self.text.config(text=(str(self.curr_img_index+1) + '/' + str(len(self.images))))
         return item
+
+    def get_barsize(self, index):
+        if index is None:
+            index = 0
+        if index % 10 == 0 and not index == 0:
+            ret = int(index/10)
+        else:
+            ret = int(index/10) + 1
+        return ret
 
     def iterate_files(self, folder_path):
         directory = os.fsencode(folder_path)
@@ -132,8 +152,8 @@ class Core():
     def leftKey(self, event):
         if self.curr_img_index is not None:
             self.curr_img_index -= 1
-        if self.curr_img_index >= len(self.images):
-            self.curr_img_index = 0
+        if self.curr_img_index < 0:
+            self.curr_img_index = len(self.images) - 1
         self.show_image(self.images[self.curr_img_index].path)
         self.curr_rect_index = None
 
@@ -147,21 +167,23 @@ class Core():
 
     def upKey(self, event):
         if self.curr_rect_index is not None:
-            self.images[self.curr_img_index].rectangles[self.curr_rect_index]['class'] += 1
-            holder = self.images[self.curr_img_index].rectangles[self.curr_rect_index]['holder']
+            index = self.curr_rect_index
+            self.images[self.curr_img_index].rectangles[index]['class'] += 1
+            holder = self.images[self.curr_img_index].rectangles[index]['holder']
             self.canvas.itemconfig(holder, outline=self.COLORS[
-                (self.images[self.curr_img_index].rectangles[self.curr_rect_index]['class'] - 1) % len(
+                (self.images[self.curr_img_index].rectangles[index]['class'] - 1) % len(
                     self.COLORS)])
             self.images[self.curr_img_index].saved = False
             self.update_bar()
 
     def downKey(self, event):
-        if self.curr_rect_index is not None and self.images[self.curr_img_index].rectangles[self.curr_rect_index][
+        index = self.curr_rect_index
+        if self.curr_rect_index is not None and self.images[self.curr_img_index].rectangles[index][
                 'class'] > 1:
-            self.images[self.curr_img_index].rectangles[self.curr_rect_index]['class'] -= 1
-            holder = self.images[self.curr_img_index].rectangles[self.curr_rect_index]['holder']
+            self.images[self.curr_img_index].rectangles[index]['class'] -= 1
+            holder = self.images[self.curr_img_index].rectangles[index]['holder']
             self.canvas.itemconfig(holder, outline=self.COLORS[
-                (self.images[self.curr_img_index].rectangles[self.curr_rect_index]['class'] - 1) % len(
+                (self.images[self.curr_img_index].rectangles[index]['class'] - 1) % len(
                     self.COLORS)])
             self.images[self.curr_img_index].saved = False
             self.update_bar()
@@ -183,6 +205,9 @@ class Core():
             self.creating_rect = False
             self.curr_rect_holder = False
             self.curr_rect_index = len(self.images[self.curr_img_index].rectangles) - 1
+            self.barsize = self.get_barsize(len(self.images[self.curr_img_index].rectangles))
+            if self.curr_rect_index % 10 == 0 and not self.curr_rect_index == 0:
+                self.next_bar()
             self.images[self.curr_img_index].saved = False
             self.update_bar()
 
@@ -200,29 +225,44 @@ class Core():
             self.bar.configure(background='green')
         else:
             self.bar.configure(background='white')
-        for i in range(len(self.images[self.curr_img_index].rectangles)):
+        self.text2.config(text=(str(self.curr_bar) + '/' + str(self.barsize)))
+        x, y = self.get_range()
+        for i in range(x, y):
             rec = self.images[self.curr_img_index].rectangles[i]
             index = rec['class']
             color = self.COLORS[(index - 1) % len(self.COLORS)]
-            self.bar.itemconfig(self.bar_rects[i], outline=color, fill=color)
-            self.bar.itemconfig(self.bar_texts[i], fill='white', text=str(index), anchor='center', font=self.FONT)
+            self.bar.itemconfig(self.bar_rects[i - 10*(self.curr_bar-1)], outline=color, fill=color)
+            self.bar.itemconfig(self.bar_texts[i - 10*(self.curr_bar-1)], fill='white', text=str(index), anchor='center', font=self.FONT)
+
+    def get_range(self):
+        if self.curr_bar == self.barsize:
+            return (self.curr_bar-1)*10, len(self.images[self.curr_img_index].rectangles)
+        else:
+            return (self.curr_bar-1)*10, self.curr_bar*10
 
     def bar_click(self, event):
         width = int(self.IMAGE_RESOLUTION[0] / 10) - 2
         index = int((event.x - 10) / width)
         if index < len(self.images[self.curr_img_index].rectangles):
-            self.curr_rect_index = index
+            self.curr_rect_index = index + 10 * (self.curr_bar - 1)
 
     def bar_delete(self, event):
         width = int(self.IMAGE_RESOLUTION[0] / 10) - 2
         index = int((event.x - 10) / width)
+        index = index + (self.curr_bar-1)*10
         if index < len(self.images[self.curr_img_index].rectangles):
             self.curr_rect_index = None
+
+            self.barsize = self.get_barsize(len(self.images[self.curr_img_index].rectangles))
+            if len(self.images[self.curr_img_index].rectangles) % 10 == 1 and not index == 1:
+                self.prev_bar()
+
             holder = self.images[self.curr_img_index].rectangles[index]['holder']
             self.images[self.curr_img_index].rectangles.pop(index)
             self.canvas.delete(holder)
             self.images[self.curr_img_index].saved = False
             self.bar.delete("all")
+            self.barsize = self.get_barsize(len(self.images[self.curr_img_index].rectangles))
             self.init_bar()
             self.update_bar()
 
@@ -245,7 +285,6 @@ class Core():
         self.input_entry.delete(first=0, last=tk.END)
         self.input_entry.insert(0, str(self.im_path))
         self.input_entry.config(state='readonly')
-        print(self.iterate_files(self.im_path))
         for resolution, path in self.iterate_files(self.im_path):
             self.images.append(ImageProperty(path, resolution))
         if len(self.images) > 0:
@@ -289,3 +328,15 @@ class Core():
             i += 1
         self.images[self.curr_img_index].saved = True
         self.update_bar()
+
+    def next_bar(self):
+        if self.curr_bar is not None and self.curr_bar < self.barsize:
+            self.curr_bar += 1
+            self.init_bar()
+            self.update_bar()
+
+    def prev_bar(self):
+        if self.curr_bar is not None and self.curr_bar > 1:
+            self.curr_bar -= 1
+            self.init_bar()
+            self.update_bar()
