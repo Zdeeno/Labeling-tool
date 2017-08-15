@@ -23,8 +23,8 @@ class ImageProperty():
 
 class Core():
     def __init__(self, filewriter):
-        self.COLORS = ('red', 'blue', 'green', 'yellow', 'cyan', 'goldenrod', 'coral', 'brown', 'IndianRed4', 'orchid', 'black',
-        'pink', 'azure4', 'orange', 'orange4', 'pink4', 'IndianRed1', 'chartreuse4', 'chocolate')
+        self.COLORS = ('red', 'blue', 'green', 'yellow', 'cyan', 'goldenrod', 'pink4', 'brown', 'IndianRed4', 'orchid', 'black',
+                       'pink', 'azure4', 'orange', 'orange4', 'coral', 'IndianRed1', 'chartreuse4', 'chocolate')
         self.IMAGE_RESOLUTION = (1200, 700)
         self.filewriter = filewriter
         self.curr_img = None
@@ -46,6 +46,7 @@ class Core():
         self.curr_bar = None
 
         self.root = tk.Tk()
+        self.root.title('Labeling tool')
         self.FONT = font.Font(family="Helvetica", size=30, weight="bold")
         self.FONT2 = font.Font(family="Helvetica", size=16)
         self.canvas = tk.Canvas(self.root, height=self.IMAGE_RESOLUTION[1], width=self.IMAGE_RESOLUTION[0])
@@ -252,11 +253,9 @@ class Core():
         index = index + (self.curr_bar-1)*10
         if index < len(self.images[self.curr_img_index].rectangles):
             self.curr_rect_index = None
-
             self.barsize = self.get_barsize(len(self.images[self.curr_img_index].rectangles))
             if len(self.images[self.curr_img_index].rectangles) % 10 == 1 and not index == 1:
                 self.prev_bar()
-
             holder = self.images[self.curr_img_index].rectangles[index]['holder']
             self.images[self.curr_img_index].rectangles.pop(index)
             self.canvas.delete(holder)

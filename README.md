@@ -19,6 +19,8 @@ From top to bottom:
 * Canvas with currently displayed image
 * Bar with rectangles
 
+![Alt text](screenshot.png?raw=true "Optional Title")
+
 ## Controls:
 * `Arrows - left, right` : Previous and next image.
 * `Arrows - up, down` : Change class of currently chosen rectangle.
