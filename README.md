@@ -1,5 +1,5 @@
 # Labeling-tool
-This is very simple graphical tool for creating bounding rectangles and appropriate text files.
+This is very simple graphical tool for creating bounding rectangles and appropriate text files, suitable for training neural networks.
 It should work for `python 3.4+` (tested on python 3.6, Ubuntu) using built in python GUI module `tkinter` and `PIL` for images.
 
 ## Input:
@@ -26,4 +26,6 @@ From top to bottom:
 * `Right mouse button ` : When clicked on canvas it saves rectangles into file. This is visualised by green background of bar. When clicked on item in bar, item is deleted.
 
 ## Running:
-Run tool simply by command `python Labeling-tool.py`, then choose input/output folders and work can start.
+1. Run tool simply by command `python Labeling-tool.py`
+2. Choose input/output folders
+3. Work can start

@@ -100,9 +100,11 @@ class Core():
         item = self.canvas.create_image(int(self.IMAGE_RESOLUTION[0] / 2), int(self.IMAGE_RESOLUTION[1] / 2), image=photo)
         # create rectangles
         self.curr_rect_index = None
+        i = 0
         for rect in self.images[self.curr_img_index].rectangles:
-            self.canvas.create_rectangle(rect['position'], width=2,
-                                    outline=self.COLORS[(rect['class'] - 1) % len(self.COLORS)])
+            self.images[self.curr_img_index].rectangles[i]['holder'] = self.canvas.create_rectangle(rect['position'],
+                                                width=2, outline=self.COLORS[(rect['class'] - 1) % len(self.COLORS)])
+            i += 1
         # update bar
         self.init_bar()
         self.update_bar()
