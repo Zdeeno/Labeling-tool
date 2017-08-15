@@ -13,11 +13,12 @@ You can implement `FileWriter` interface if you need different output format.
 
 ## GUI:
 From top to bottom:
-* Input folder
-* Output folder
-* Image number
-* Canvas with currently displayed image
-* Bar with rectangles
+1. Input folder
+2. Output folder
+3. Image number
+4. Canvas with currently displayed image
+5. Bar with rectangles
+6. Current bar index
 
 ![Alt text](screenshot.png?raw=true "Optional Title")
 
