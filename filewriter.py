@@ -2,7 +2,10 @@ import os
 
 
 class FileWriter:
-
+    '''
+    class to override when you need implement different output format
+    change instance in Labeling-tool.py
+    '''
     def write_line(self, resolution, label_index, lt, rb, image_name, output_path, is_new_file):
         '''
         method writing line into output file
