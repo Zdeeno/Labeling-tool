@@ -54,7 +54,7 @@ class Core():
 
         self.top_frame = tk.Frame(self.root)
         self.top_frame.pack(expand=1, side=tk.TOP, fill=tk.X)
-        tk.Button(self.top_frame, text='    INPUT    ', command=self.input_dialog).pack(side=tk.LEFT)
+        tk.Button(self.top_frame, text='      INPUT      ', command=self.input_dialog).pack(side=tk.LEFT)
         self.input_entry = tk.Entry(self.top_frame)
         self.input_entry.pack(fill=tk.X, side=tk.RIGHT, expand=1)
         self.input_entry.config(state='readonly')
@@ -80,9 +80,16 @@ class Core():
         self.root.bind('<Right>', self.rightKey)
         self.root.bind('<Up>', self.upKey)
         self.root.bind('<Down>', self.downKey)
+        self.root.bind("<space>", self.press_space)
+        # with Windows OS
+        self.root.bind("<MouseWheel>", self.mouse_wheel)
+        # with Linux OS
+        self.root.bind("<Button-4>", self.mouse_wheel)
+        self.root.bind("<Button-5>", self.mouse_wheel)
+        self.root.bind("<Button-2>", self.mouse_wheel)
         self.canvas.bind("<Button-1>", self.left_click)
         self.canvas.bind("<Motion>", self.motion)
-        self.canvas.bind('<Button-3>', self.write_file)
+        self.canvas.bind('<Button-3>', self.bar_delete)
         self.bar.bind('<Button-1>', self.bar_click)
         self.bar.bind('<Button-3>', self.bar_delete)
 
@@ -189,6 +196,15 @@ class Core():
             self.images[self.curr_img_index].saved = False
             self.update_bar()
 
+    def mouse_wheel(self, event):
+        if event.num == 5 or event.delta == -120 or event.delta == -1:
+            self.downKey(event)
+            return
+        if event.num == 4 or event.delta == 120 or event.delta == 1:
+            self.upKey(event)
+            return
+        self.write_file(event)
+
     def left_click(self, event):
         if not self.creating_rect:
             if self.image_x[0] < event.x < self.image_x[1] and self.image_y[0] < event.y < self.image_x[1]:
@@ -248,11 +264,16 @@ class Core():
             self.curr_rect_index = index + 10 * (self.curr_bar - 1)
 
     def bar_delete(self, event):
-        width = int(self.IMAGE_RESOLUTION[0] / 10) - 2
-        index = int((event.x - 10) / width)
-        index = index + (self.curr_bar-1)*10
+        if event.widget == self.canvas:
+            if self.curr_rect_index is None:
+                index = 9999999
+            else:
+                index = self.curr_rect_index
+        else:
+            width = int(self.IMAGE_RESOLUTION[0] / 10) - 2
+            index = int((event.x - 10) / width)
+            index = index + (self.curr_bar-1)*10
         if index < len(self.images[self.curr_img_index].rectangles):
-            self.curr_rect_index = None
             self.barsize = self.get_barsize(len(self.images[self.curr_img_index].rectangles))
             if len(self.images[self.curr_img_index].rectangles) % 10 == 1 and not index == 1:
                 self.prev_bar()
@@ -261,7 +282,12 @@ class Core():
             self.canvas.delete(holder)
             self.images[self.curr_img_index].saved = False
             self.bar.delete("all")
-            self.barsize = self.get_barsize(len(self.images[self.curr_img_index].rectangles))
+            length = len(self.images[self.curr_img_index].rectangles)
+            if length > 0:
+                self.curr_rect_index = length - 1
+            else:
+                self.curr_rect_index = None
+            self.barsize = self.get_barsize(length)
             self.init_bar()
             self.update_bar()
 
@@ -339,3 +365,7 @@ class Core():
             self.curr_bar -= 1
             self.init_bar()
             self.update_bar()
+
+    def press_space(self, event):
+        self.write_file(event)
+        self.rightKey(event)

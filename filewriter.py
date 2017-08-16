@@ -46,8 +46,8 @@ class FileWriterYolo(FileWriter):
             f = open(os.path.join(output_path, name), 'w')
         else:
             f = open(os.path.join(output_path, name), 'a')
-        line = str(label_index-1) + ' ' + str(center[0]/resolution[0]) + ' ' + str(center[1]/resolution[1]) + ' ' + \
-            str(size[0]/resolution[0]) + ' ' + str(size[1]/resolution[1]) + '\n'
+        line = str(label_index-1) + ' ' + str(str.format("{0:.6f}", center[0]/resolution[0])) + ' ' + str(str.format("{0:.6f}", center[1]/resolution[1])) + ' ' + \
+            str(str.format("{0:.6f}", size[0]/resolution[0])) + ' ' + str(str.format("{0:.6f}", size[1]/resolution[1])) + '\n'
         f.write(line)
 
 
