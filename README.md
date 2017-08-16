@@ -24,9 +24,11 @@ From top to bottom:
 
 ## Controls:
 * `Arrows - left, right` : Previous and next image.
-* `Arrows - up, down` : Change class of currently chosen rectangle.
+* `Arrows - up, down` or `Mousewheel` : Change class of currently chosen rectangle.
 * `Left mouse button` : When clicked on canvas, it starts creating rectangle. When clicked on bar, it chooses rectangle to modify.
-* `Right mouse button ` : When clicked on canvas it saves rectangles into file. This is visualised by green background of bar. When clicked on item in bar, item is deleted.
+* `Right mouse button ` : When clicked on canvas last item is deleted. When clicked on bar, chosen item is deleted.
+* `Spacebar` : Save rectangles into file and go to next frame.
+* `Mousewheel click` : Save rectangles into file. This is visualised by green color of bar's background.
 
 ## Running:
 1. Run tool simply by command `python Labeling-tool.py`
