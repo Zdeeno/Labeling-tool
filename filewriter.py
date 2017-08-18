@@ -9,10 +9,10 @@ class FileWriter:
     def write_line(self, resolution, label_index, lt, rb, image_name, output_path, is_new_file):
         '''
         method writing line into output file
-        :param resolution: (x, y) number of pixels
+        :param resolution: tuple (x, y) number of pixels
         :param label_index: int from 1
-        :param lt: left top corner coordinates of bounding box (coordinates indexed from 0 to resolution - 1)
-        :param rb: right bottom corner coordinates of bounding box (coordinates indexed from 0 to resolution - 1)
+        :param lt: tuple (x, y) - left top corner coordinates of bounding box (coordinates indexed from 0)
+        :param rb: tuple (x, y) - right bottom corner coordinates of bounding box (coordinates indexed from 0)
         :param image_name: string - name of image file
         :param output_path: string - absolute output folder path
         :param is_new_file: boolean - True if current line is first in text file

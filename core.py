@@ -25,7 +25,6 @@ class Core():
     def __init__(self, filewriter):
         self.COLORS = ('red', 'blue', 'green', 'yellow', 'cyan', 'goldenrod', 'pink4', 'brown', 'IndianRed4', 'orchid', 'black',
                        'pink', 'azure4', 'orange', 'orange4', 'coral', 'IndianRed1', 'chartreuse4', 'chocolate')
-        self.IMAGE_RESOLUTION = (1200, 700)
         self.filewriter = filewriter
         self.curr_img = None
         self.curr_img_index = None
@@ -44,27 +43,37 @@ class Core():
         self.ratio = None
         self.barsize = 0
         self.curr_bar = None
+        self.max_class = None
 
         self.root = tk.Tk()
+        width = self.root.winfo_screenwidth()
+        height = self.root.winfo_screenheight()
+        self.IMAGE_RESOLUTION = (width - width/8, height - height/3)
         self.root.title('Labeling tool')
         self.FONT = font.Font(family="Helvetica", size=30, weight="bold")
         self.FONT2 = font.Font(family="Helvetica", size=16)
         self.canvas = tk.Canvas(self.root, height=self.IMAGE_RESOLUTION[1], width=self.IMAGE_RESOLUTION[0])
         self.bar = tk.Canvas(self.root, height=int(self.IMAGE_RESOLUTION[1] / 8), width=self.IMAGE_RESOLUTION[0], bg='white')
 
-        self.top_frame = tk.Frame(self.root)
-        self.top_frame.pack(expand=1, side=tk.TOP, fill=tk.X)
-        tk.Button(self.top_frame, text='      INPUT      ', command=self.input_dialog).pack(side=tk.LEFT)
-        self.input_entry = tk.Entry(self.top_frame)
+        self.frame = tk.Frame(self.root)
+        self.frame.pack(expand=1, side=tk.TOP, fill=tk.X)
+        tk.Button(self.frame, text='      INPUT      ', command=self.input_dialog).pack(side=tk.LEFT)
+        self.input_entry = tk.Entry(self.frame)
         self.input_entry.pack(fill=tk.X, side=tk.RIGHT, expand=1)
         self.input_entry.config(state='readonly')
 
-        self.top_frame = tk.Frame(self.root)
-        self.top_frame.pack(expand=1, side=tk.TOP, fill=tk.X)
-        tk.Button(self.top_frame, text='    OUTPUT    ', command=self.output_dialog).pack(side=tk.LEFT)
-        self.output_entry = tk.Entry(self.top_frame)
+        self.frame = tk.Frame(self.root)
+        self.frame.pack(expand=1, side=tk.TOP, fill=tk.X)
+        tk.Button(self.frame, text='    OUTPUT    ', command=self.output_dialog).pack(side=tk.LEFT)
+        self.output_entry = tk.Entry(self.frame)
         self.output_entry.pack(fill=tk.X, side=tk.RIGHT, expand=1)
         self.output_entry.config(state='readonly')
+
+        self.frame = tk.Frame(self.root)
+        self.frame.pack(expand=1, side=tk.TOP, fill=tk.X)
+        tk.Button(self.frame, text='   SET NUMBER OF CLASSES   ', command=self.set_class).pack(side=tk.LEFT)
+        self.output_entry = tk.Entry(self.frame)
+        self.output_entry.pack(fill=tk.X, side=tk.RIGHT, expand=1)
 
         self.text = tk.Label(self.root, text='0/0', font=self.FONT2)
         self.text.pack(expand=1, side=tk.TOP, fill=tk.X)
@@ -94,6 +103,15 @@ class Core():
         self.bar.bind('<Button-3>', self.bar_delete)
 
         self.root.mainloop()
+
+    def set_class(self):
+        try:
+            self.max_class = int(self.output_entry.get())
+        except ValueError:
+            messagebox.showwarning(
+                "Classes",
+                "Must be integer!\n"
+            )
 
     def resize_image(self, image):
         image.resolution = self.IMAGE_RESOLUTION
@@ -153,9 +171,7 @@ class Core():
             try:
                 image = Image.open(file_path)
                 yield image.size, file_path
-            except:
-                OSError
-
+            except: OSError
 
     def leftKey(self, event):
         if self.curr_img_index is not None:
@@ -174,8 +190,10 @@ class Core():
         self.curr_rect_index = None
 
     def upKey(self, event):
+        index = self.curr_rect_index
+        if self.max_class is not None and self.max_class == self.images[self.curr_img_index].rectangles[index]['class']:
+            return
         if self.curr_rect_index is not None:
-            index = self.curr_rect_index
             self.images[self.curr_img_index].rectangles[index]['class'] += 1
             holder = self.images[self.curr_img_index].rectangles[index]['holder']
             self.canvas.itemconfig(holder, outline=self.COLORS[
@@ -210,6 +228,9 @@ class Core():
             if self.image_x[0] < event.x < self.image_x[1] and self.image_y[0] < event.y < self.image_x[1]:
                 self.curr_rect_pt = (event.x, event.y)
                 self.class_index = self.images[self.curr_img_index].get_next_class()
+                if self.max_class is not None:
+                    if self.class_index >= self.max_class:
+                        self.class_index = self.max_class
                 self.curr_rect_holder = self.canvas.create_rectangle(*self.curr_rect_pt, self.curr_rect_pt[0] + 2,
                                                                 self.curr_rect_pt[1] + 2,
                                                                 width=2, outline=self.COLORS[
@@ -220,7 +241,7 @@ class Core():
                                                                 'position': self.canvas.coords(self.curr_rect_holder),
                                                                 'holder': self.curr_rect_holder})
             self.creating_rect = False
-            self.curr_rect_holder = False
+            self.curr_rect_holder = None
             self.curr_rect_index = len(self.images[self.curr_img_index].rectangles) - 1
             self.barsize = self.get_barsize(len(self.images[self.curr_img_index].rectangles))
             if self.curr_rect_index % 10 == 0 and not self.curr_rect_index == 0:
