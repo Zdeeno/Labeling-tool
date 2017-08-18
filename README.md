@@ -20,7 +20,7 @@ From top to bottom:
 5. Bar with rectangles
 6. Current bar index
 
-![Alt text](screenshot.png?raw=true "Optional Title")
+![Alt text](screenshot.png?raw=true "GUI illustration")
 
 ## Controls:
 * `Arrows - left, right` : Previous and next image.
