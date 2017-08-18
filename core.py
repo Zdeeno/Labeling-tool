@@ -73,7 +73,10 @@ class Core():
         self.frame.pack(expand=1, side=tk.TOP, fill=tk.X)
         tk.Button(self.frame, text='   SET NUMBER OF CLASSES   ', command=self.set_class).pack(side=tk.LEFT)
         self.output_entry = tk.Entry(self.frame)
-        self.output_entry.pack(fill=tk.X, side=tk.RIGHT, expand=1)
+        self.output_entry.pack(fill=tk.X, side=tk.LEFT, expand=1)
+        tk.Button(self.frame, text='   GO TO IMAGE   ', command=self.go_to_image).pack(side=tk.LEFT)
+        self.goto_entry = tk.Entry(self.frame)
+        self.goto_entry.pack(fill=tk.X, side=tk.RIGHT, expand=1)
 
         self.text = tk.Label(self.root, text='0/0', font=self.FONT2)
         self.text.pack(expand=1, side=tk.TOP, fill=tk.X)
@@ -390,3 +393,17 @@ class Core():
     def press_space(self, event):
         self.write_file(event)
         self.rightKey(event)
+
+    def go_to_image(self):
+        try:
+            if self.curr_img_index is not None:
+                tmp = int(self.goto_entry.get())
+                if 0 < tmp <= len(self.images):
+                    self.curr_img_index = tmp - 1
+                    self.show_image(self.images[self.curr_img_index].path)
+                    self.curr_rect_index = None
+        except ValueError:
+            messagebox.showwarning(
+                "Image number",
+                "Must be integer!\n"
+            )
