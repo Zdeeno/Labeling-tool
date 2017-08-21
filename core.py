@@ -55,32 +55,33 @@ class Core():
         self.canvas = tk.Canvas(self.root, height=self.IMAGE_RESOLUTION[1], width=self.IMAGE_RESOLUTION[0])
         self.bar = tk.Canvas(self.root, height=int(self.IMAGE_RESOLUTION[1] / 8), width=self.IMAGE_RESOLUTION[0], bg='white')
 
+        # first panel
         self.frame = tk.Frame(self.root)
         self.frame.pack(expand=1, side=tk.TOP, fill=tk.X)
         tk.Button(self.frame, text='      INPUT      ', command=self.input_dialog).pack(side=tk.LEFT)
         self.input_entry = tk.Entry(self.frame)
         self.input_entry.pack(fill=tk.X, side=tk.RIGHT, expand=1)
         self.input_entry.config(state='readonly')
-
+        # second panel
         self.frame = tk.Frame(self.root)
         self.frame.pack(expand=1, side=tk.TOP, fill=tk.X)
         tk.Button(self.frame, text='    OUTPUT    ', command=self.output_dialog).pack(side=tk.LEFT)
         self.output_entry = tk.Entry(self.frame)
         self.output_entry.pack(fill=tk.X, side=tk.RIGHT, expand=1)
         self.output_entry.config(state='readonly')
-
+        # classes and goto, third panel
         self.frame = tk.Frame(self.root)
         self.frame.pack(expand=1, side=tk.TOP, fill=tk.X)
         tk.Button(self.frame, text='   SET NUMBER OF CLASSES   ', command=self.set_class).pack(side=tk.LEFT)
-        self.output_entry = tk.Entry(self.frame)
-        self.output_entry.pack(fill=tk.X, side=tk.LEFT, expand=1)
+        self.class_entry = tk.Entry(self.frame)
+        self.class_entry.pack(fill=tk.X, side=tk.LEFT, expand=1)
         tk.Button(self.frame, text='   GO TO IMAGE   ', command=self.go_to_image).pack(side=tk.LEFT)
         self.goto_entry = tk.Entry(self.frame)
         self.goto_entry.pack(fill=tk.X, side=tk.RIGHT, expand=1)
-
+        # number of images
         self.text = tk.Label(self.root, text='0/0', font=self.FONT2)
         self.text.pack(expand=1, side=tk.TOP, fill=tk.X)
-
+        # bottom
         self.bottom_frame = tk.Frame(self.root)
         self.bottom_frame.pack(expand=1, side=tk.BOTTOM, fill=tk.X)
         self.text2 = tk.Label(self.bottom_frame, text='0/0', font=self.FONT2)
@@ -108,8 +109,9 @@ class Core():
         self.root.mainloop()
 
     def set_class(self):
+        self.root.focus_set()
         try:
-            self.max_class = int(self.output_entry.get())
+            self.max_class = int(self.class_entry.get())
         except ValueError:
             messagebox.showwarning(
                 "Classes",
@@ -194,8 +196,9 @@ class Core():
 
     def upKey(self, event):
         index = self.curr_rect_index
-        if self.max_class is not None and self.max_class == self.images[self.curr_img_index].rectangles[index]['class']:
-            return
+        if self.max_class is not None and len(self.images) > 0:
+            if self.max_class == self.images[self.curr_img_index].rectangles[index]['class']:
+                return
         if self.curr_rect_index is not None:
             self.images[self.curr_img_index].rectangles[index]['class'] += 1
             holder = self.images[self.curr_img_index].rectangles[index]['holder']
@@ -334,6 +337,7 @@ class Core():
         self.input_entry.delete(first=0, last=tk.END)
         self.input_entry.insert(0, str(self.im_path))
         self.input_entry.config(state='readonly')
+        self.images.clear()
         for resolution, path in self.iterate_files(self.im_path):
             self.images.append(ImageProperty(path, resolution))
         if len(self.images) > 0:
@@ -395,6 +399,7 @@ class Core():
         self.rightKey(event)
 
     def go_to_image(self):
+        self.root.focus_set()
         try:
             if self.curr_img_index is not None:
                 tmp = int(self.goto_entry.get())
