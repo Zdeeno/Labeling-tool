@@ -1,6 +1,6 @@
 # Labeling-tool
 This is very simple graphical tool for creating bounding rectangles and appropriate text files, suitable for training neural networks.
-It should work for `python 3.4+` (tested on python 3.6, Ubuntu) using built in python GUI module `tkinter` and `PIL` for images.
+It should work for `python 3.4+` (tested on conda python 3.6.1, Ubuntu, macOS, Windows) using built in python GUI module `tkinter` and `PIL` for images.
 
 ## Input:
 Input is folder with set of images (image format must be supported by PIL).
@@ -15,10 +15,11 @@ You can implement `FileWriter` interface if you need different output format.
 From top to bottom:
 1. Input folder
 2. Output folder
-3. Image number
-4. Canvas with currently displayed image
-5. Bar with rectangles
-6. Current bar index
+3. Classes and go to button
+4. Image number
+5. Canvas with currently displayed image
+6. Bar with rectangles
+7. Current bar index
 
 ![Alt text](screenshot.png?raw=true "GUI illustration")
 

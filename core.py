@@ -202,7 +202,7 @@ class Core():
 
     def upKey(self, event):
         index = self.curr_rect_index
-        if self.max_class is not None and len(self.images) > 0:
+        if self.max_class is not None and len(self.images) > 0 and index is not None:
             if self.max_class == self.images[self.curr_img_index].rectangles[index]['class']:
                 return
         if self.curr_rect_index is not None:
