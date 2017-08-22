@@ -184,7 +184,10 @@ class Core():
         if self.curr_img_index < 0:
             self.curr_img_index = len(self.images) - 1
         self.show_image(self.images[self.curr_img_index].path)
-        self.curr_rect_index = None
+        if len(self.images[self.curr_img_index].rectangles) > 0:
+            self.curr_rect_index = len(self.images[self.curr_img_index].rectangles) - 1
+        else:
+            self.curr_rect_index = None
 
     def rightKey(self, event):
         if self.curr_img_index is not None:
@@ -192,7 +195,10 @@ class Core():
         if self.curr_img_index >= len(self.images):
             self.curr_img_index = 0
         self.show_image(self.images[self.curr_img_index].path)
-        self.curr_rect_index = None
+        if len(self.images[self.curr_img_index].rectangles) > 0:
+            self.curr_rect_index = len(self.images[self.curr_img_index].rectangles) - 1
+        else:
+            self.curr_rect_index = None
 
     def upKey(self, event):
         index = self.curr_rect_index
@@ -291,6 +297,11 @@ class Core():
             self.curr_rect_index = index + 10 * (self.curr_bar - 1)
 
     def bar_delete(self, event):
+        if self.creating_rect:
+            self.creating_rect = False
+            self.canvas.delete(self.curr_rect_holder)
+            self.curr_rect_holder = None
+            return
         if event.widget == self.canvas:
             if self.curr_rect_index is None:
                 index = 9999999
